@@ -1,4 +1,5 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import { isBinaryFile } from "isbinaryfile";
 import {
   existsSync,
   readFileSync,
@@ -144,44 +145,17 @@ function escapeMarkdown(text: string): string {
     .replace(/[_*\[\]()~`>#+\-=|{}.!]/g, "\\$&");
 }
 
-function isBinaryFile(filePath: string, buffer: Buffer, bytesRead: number): boolean {
-  // Common binary file extensions
-  const binaryExtensions = /\.(webp|png|jpg|jpeg|gif|bmp|ico|svg|exe|dll|so|dylib|zip|tar|gz|rar|7z|pdf|bin|dat|db|sqlite|jar|class|o|a|lib|dylib)$/i;
-
-  if (binaryExtensions.test(filePath)) {
-    return true;
+async function checkIfBinary(filePath: string): Promise<boolean> {
+  try {
+    return await isBinaryFile(filePath);
+  } catch (e: any) {
+    // If we can't determine, assume it's text to be safe
+    return false;
   }
-
-  // Check for null bytes (typical in binary files)
-  if (buffer.slice(0, bytesRead).includes(0)) {
-    return true;
-  }
-
-  // Check for high proportion of non-text bytes (control characters, etc)
-  let nonTextBytes = 0;
-  for (let i = 0; i < bytesRead; i++) {
-    const byte = buffer[i];
-    // Allow common control chars: \t(9), \n(10), \r(13), but flag others
-    if (byte < 32 && byte !== 9 && byte !== 10 && byte !== 13) {
-      nonTextBytes++;
-    }
-  }
-
-  return nonTextBytes / bytesRead > 0.3; // If >30% are non-text bytes, it's likely binary
 }
 
 function readFileContent(filePath: string): string {
   try {
-    const fd = openSync(filePath, "r");
-    const buffer = Buffer.alloc(1024);
-    const bytesRead = readSync(fd, buffer, 0, 1024, 0);
-    closeSync(fd);
-
-    if (isBinaryFile(filePath, buffer, bytesRead)) {
-      const ext = filePath.split(".").pop()?.toUpperCase() || "BINARY";
-      return `_Binary file — cannot display (.${ext} file)_`;
-    }
-
     const content = readFileSync(filePath, "utf-8");
     if (content.length > MAX_TEXT_PREVIEW) {
       return content.slice(0, MAX_TEXT_PREVIEW) + "\n\n_... (truncated)_";
@@ -192,7 +166,7 @@ function readFileContent(filePath: string): string {
   }
 }
 
-function generateBrowser(path: string, offset: number = 0): { text: string; buttons: any[][] } {
+async function generateBrowser(path: string, offset: number = 0): Promise<{ text: string; buttons: any[][] }> {
   try {
     const fullPath = validatePath(path);
 
@@ -203,14 +177,8 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
     const stats = statSync(fullPath);
 
     if (!stats.isDirectory()) {
-      const content = readFileContent(fullPath);
       const relPath = getRelativePath(fullPath);
       const parentDir = getRelativePath(dirname(fullPath));
-
-      // Handle pagination for large files
-      const chunk = content.slice(offset, offset + MAX_TEXT_PREVIEW);
-      const hasMore = offset + MAX_TEXT_PREVIEW < content.length;
-      const truncationNote = hasMore ? "\n\n_... (truncated) - use Next to see more_" : "";
 
       const buttons = [
         [
@@ -218,6 +186,29 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
           { text: "🏠 Home", callback_data: "/filebrowse ." },
         ],
       ];
+
+      // Check if file is binary
+      const isBinary = await checkIfBinary(fullPath);
+
+      if (isBinary) {
+        // Binary file - show message and download button
+        const ext = fullPath.split(".").pop()?.toUpperCase() || "BINARY";
+        buttons.push([
+          { text: "📥 Download", callback_data: `/download ${fullPath}` },
+        ]);
+        return {
+          text: `📄 *${escapeMarkdown(relPath)}*\n\n_Binary file — cannot preview (.${ext} file)_\n\nUse the Download button to get the file.`,
+          buttons,
+        };
+      }
+
+      // Text file - show content with pagination
+      const content = readFileContent(fullPath);
+
+      // Handle pagination for large files
+      const chunk = content.slice(offset, offset + MAX_TEXT_PREVIEW);
+      const hasMore = offset + MAX_TEXT_PREVIEW < content.length;
+      const truncationNote = hasMore ? "\n\n_... (truncated) - use Next to see more_" : "";
 
       // Add pagination buttons if needed
       if (offset > 0 || hasMore) {
@@ -312,7 +303,7 @@ async function sendOrEditBrowser(
   offset: number = 0,
   alwaysSendNew: boolean = false
 ): Promise<void> {
-  const result = generateBrowser(path, offset);
+  const result = await generateBrowser(path, offset);
   const messageId = state[String(chatId)];
 
   if (messageId && !alwaysSendNew) {

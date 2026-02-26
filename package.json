@@ -4,9 +4,11 @@
   "private": true,
   "description": "File browser for OpenClaw workspace via Telegram inline buttons",
   "type": "module",
-  "dependencies": {},
+  "dependencies": {
+    "isbinaryfile": "^5.0.2"
+  },
   "peerDependencies": {
-    "openclaw": ">=2026.2.26"
+    "openclaw": ">=2026.2.25"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
