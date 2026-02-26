@@ -21,10 +21,13 @@ const STATE_FILE = join(STATE_DIR, "state.json");
 
 const MAX_BUTTONS_PER_ROW = 2;
 const MAX_BUTTONS_TOTAL = 40;
-const MAX_TEXT_PREVIEW = 3500;
+const MAX_TEXT_PREVIEW = 2500;
 
 // State: chatId -> messageId
 type BrowserState = Record<string, number>;
+
+// File view state: `${chatId}_${filePath}` -> { offset: number }
+type FileViewState = Record<string, { offset: number }>;
 
 function loadState(): BrowserState {
   try {
@@ -162,7 +165,7 @@ function readFileContent(filePath: string): string {
   }
 }
 
-function generateBrowser(path: string): { text: string; buttons: any[][] } {
+function generateBrowser(path: string, offset: number = 0): { text: string; buttons: any[][] } {
   try {
     const fullPath = validatePath(path);
 
@@ -176,17 +179,47 @@ function generateBrowser(path: string): { text: string; buttons: any[][] } {
       const content = readFileContent(fullPath);
       const relPath = getRelativePath(fullPath);
       const parentDir = getRelativePath(dirname(fullPath));
+
+      // Handle pagination for large files
+      const chunk = content.slice(offset, offset + MAX_TEXT_PREVIEW);
+      const hasMore = offset + MAX_TEXT_PREVIEW < content.length;
+      const truncationNote = hasMore ? "\n\n_... (truncated) - use Next to see more_" : "";
+
       const buttons = [
         [
           { text: "⬆️ Up", callback_data: `/filebrowse ${parentDir}` },
           { text: "🏠 Home", callback_data: "/filebrowse ." },
         ],
-        [
-          { text: "📥 Download", callback_data: `/download ${fullPath}` },
-        ],
       ];
+
+      // Add pagination buttons if needed
+      if (offset > 0 || hasMore) {
+        const navButtons: any[] = [];
+        if (offset > 0) {
+          const prevOffset = Math.max(0, offset - MAX_TEXT_PREVIEW);
+          navButtons.push({
+            text: "⬅️ Previous",
+            callback_data: `/filebrowse-offset ${fullPath}:${prevOffset}`,
+          });
+        }
+        if (hasMore) {
+          const nextOffset = offset + MAX_TEXT_PREVIEW;
+          navButtons.push({
+            text: "Next ➡️",
+            callback_data: `/filebrowse-offset ${fullPath}:${nextOffset}`,
+          });
+        }
+        if (navButtons.length > 0) {
+          buttons.push(navButtons);
+        }
+      }
+
+      buttons.push([
+        { text: "📥 Download", callback_data: `/download ${fullPath}` },
+      ]);
+
       return {
-        text: `📄 *${escapeMarkdown(relPath)}*\n\n\`\`\`\n${content.slice(0, 3500)}\n\`\`\``,
+        text: `📄 *${escapeMarkdown(relPath)}*\n\n\`\`\`\n${chunk}${truncationNote}\n\`\`\``,
         buttons,
       };
     }
@@ -248,9 +281,10 @@ async function sendOrEditBrowser(
   botToken: string,
   chatId: number,
   path: string,
-  state: BrowserState
+  state: BrowserState,
+  offset: number = 0
 ): Promise<void> {
-  const result = generateBrowser(path);
+  const result = generateBrowser(path, offset);
   const messageId = state[String(chatId)];
 
   if (messageId) {
@@ -287,7 +321,7 @@ async function sendOrEditBrowser(
 export default function register(api: OpenClawPluginApi) {
   const state = loadState();
 
-  async function handleFileBrowse(ctx: any, path: string): Promise<{ text: string }> {
+  async function handleFileBrowse(ctx: any, path: string, offset: number = 0): Promise<{ text: string }> {
     // Check if the message comes from Telegram
     if (ctx.channel !== "telegram") {
       return { text: "❌ Channel not supported. Only Telegram is supported for file browsing." };
@@ -308,10 +342,28 @@ export default function register(api: OpenClawPluginApi) {
     }
 
     // Send or edit the browser message directly via Telegram API
-    await sendOrEditBrowser(botToken, chatId, path, state);
+    await sendOrEditBrowser(botToken, chatId, path, state, offset);
 
     // Return NO_REPLY indicator - we handled sending ourselves
     return { text: "\u200B" }; // Zero-width space - invisible but satisfies response check
+  }
+
+  async function handleFileOffset(ctx: any, pathWithOffset: string): Promise<{ text: string }> {
+    // Parse path:offset format
+    const lastColonIndex = pathWithOffset.lastIndexOf(":");
+    if (lastColonIndex === -1) {
+      return { text: "❌ Invalid file offset format" };
+    }
+
+    const path = pathWithOffset.substring(0, lastColonIndex);
+    const offsetStr = pathWithOffset.substring(lastColonIndex + 1);
+    const offset = parseInt(offsetStr, 10);
+
+    if (isNaN(offset)) {
+      return { text: "❌ Invalid offset value" };
+    }
+
+    return handleFileBrowse(ctx, path, offset);
   }
 
   async function handleDownload(ctx: any, filePath: string): Promise<{ text: string }> {
@@ -388,6 +440,20 @@ export default function register(api: OpenClawPluginApi) {
         return { text: "❌ No file path specified" };
       }
       return handleDownload(ctx, filePath);
+    },
+  });
+
+  api.registerCommand({
+    name: "filebrowse-offset",
+    description: "Browse file with offset (internal command)",
+    acceptsArgs: true,
+    requireAuth: true,
+    handler: async (ctx: any) => {
+      const pathWithOffset = ctx.args?.trim();
+      if (!pathWithOffset) {
+        return { text: "❌ No path or offset specified" };
+      }
+      return handleFileOffset(ctx, pathWithOffset);
     },
   });
 
