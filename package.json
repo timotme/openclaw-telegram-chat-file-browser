@@ -1,0 +1,20 @@
+{
+  "name": "@openclaw/telegram-file-browser",
+  "version": "2026.2.26",
+  "private": true,
+  "description": "File browser for OpenClaw workspace via Telegram inline buttons",
+  "type": "module",
+  "dependencies": {},
+  "peerDependencies": {
+    "openclaw": ">=2026.2.26"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.3.3"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

@@ -1,5 +1,18 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  realpathSync,
+  statSync,
+  readdirSync,
+  openSync,
+  readSync,
+  closeSync,
+
+} from "fs";
+import { join, dirname, resolve } from "path";
 import { homedir } from "os";
 
 const WORKSPACE_ROOT = join(homedir(), ".openclaw", "workspace");
@@ -42,9 +55,9 @@ async function callTelegramApi(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
-  const data = await response.json();
+  const data = (await response.json()) as Record<string, unknown>;
   if (!data.ok) {
-    throw new Error(data.description || `Telegram API error`);
+    throw new Error((data.description as string) || `Telegram API error`);
   }
   return data;
 }
@@ -64,8 +77,8 @@ function validatePath(requestedPath: string): string {
     fullPath = join(WORKSPACE_ROOT, requestedPath);
   }
 
-  const resolvedPath = require("path").resolve(fullPath);
-  const resolvedWorkspace = require("path").resolve(WORKSPACE_ROOT);
+  const resolvedPath = resolve(fullPath);
+  const resolvedWorkspace = resolve(WORKSPACE_ROOT);
 
   if (!resolvedPath.startsWith(resolvedWorkspace)) {
     throw new Error("Access denied: path outside workspace");
@@ -73,7 +86,7 @@ function validatePath(requestedPath: string): string {
 
   if (existsSync(resolvedPath)) {
     try {
-      const realPath = require("fs").realpathSync(resolvedPath);
+      const realPath = realpathSync(resolvedPath);
       if (!realPath.startsWith(resolvedWorkspace)) {
         throw new Error("Access denied: symlink points outside workspace");
       }
@@ -84,8 +97,8 @@ function validatePath(requestedPath: string): string {
 }
 
 function getRelativePath(fullPath: string): string {
-  const resolvedPath = require("path").resolve(fullPath);
-  const resolvedWorkspace = require("path").resolve(WORKSPACE_ROOT);
+  const resolvedPath = resolve(fullPath);
+  const resolvedWorkspace = resolve(WORKSPACE_ROOT);
   return resolvedPath.substring(resolvedWorkspace.length).replace(/^\//, "") || ".";
 }
 
@@ -97,10 +110,10 @@ function escapeMarkdown(text: string): string {
 
 function readFileContent(filePath: string): string {
   try {
-    const fd = require("fs").openSync(filePath, "r");
+    const fd = openSync(filePath, "r");
     const buffer = Buffer.alloc(1024);
-    const bytesRead = require("fs").readSync(fd, buffer, 0, 1024, 0);
-    require("fs").closeSync(fd);
+    const bytesRead = readSync(fd, buffer, 0, 1024, 0);
+    closeSync(fd);
 
     if (buffer.slice(0, bytesRead).includes(0)) {
       return "_Binary file — cannot display_";
@@ -124,7 +137,7 @@ function generateBrowser(path: string): { text: string; buttons: any[][] } {
       return { text: `❌ Path not found: ${getRelativePath(fullPath)}`, buttons: [] };
     }
 
-    const stats = require("fs").statSync(fullPath);
+    const stats = statSync(fullPath);
 
     if (!stats.isDirectory()) {
       const content = readFileContent(fullPath);
@@ -142,7 +155,7 @@ function generateBrowser(path: string): { text: string; buttons: any[][] } {
       };
     }
 
-    const entries = require("fs").readdirSync(fullPath, { withFileTypes: true });
+    const entries = readdirSync(fullPath, { withFileTypes: true });
     const sorted = entries.sort((a: any, b: any) => {
       if (a.isDirectory() && !b.isDirectory()) return -1;
       if (!a.isDirectory() && b.isDirectory()) return 1;
@@ -235,10 +248,10 @@ async function sendOrEditBrowser(
   }
 }
 
-export default function register(api: any) {
+export default function register(api: OpenClawPluginApi) {
   const state = loadState();
 
-  async function handleFileBrowse(ctx: any, path: string): Promise<any> {
+  async function handleFileBrowse(ctx: any, path: string): Promise<{ text: string }> {
     // Get Telegram bot token from config
     const botToken = ctx.config.channels?.telegram?.botToken;
 
