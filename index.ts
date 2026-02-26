@@ -144,6 +144,32 @@ function escapeMarkdown(text: string): string {
     .replace(/[_*\[\]()~`>#+\-=|{}.!]/g, "\\$&");
 }
 
+function isBinaryFile(filePath: string, buffer: Buffer, bytesRead: number): boolean {
+  // Common binary file extensions
+  const binaryExtensions = /\.(webp|png|jpg|jpeg|gif|bmp|ico|svg|exe|dll|so|dylib|zip|tar|gz|rar|7z|pdf|bin|dat|db|sqlite|jar|class|o|a|lib|dylib)$/i;
+
+  if (binaryExtensions.test(filePath)) {
+    return true;
+  }
+
+  // Check for null bytes (typical in binary files)
+  if (buffer.slice(0, bytesRead).includes(0)) {
+    return true;
+  }
+
+  // Check for high proportion of non-text bytes (control characters, etc)
+  let nonTextBytes = 0;
+  for (let i = 0; i < bytesRead; i++) {
+    const byte = buffer[i];
+    // Allow common control chars: \t(9), \n(10), \r(13), but flag others
+    if (byte < 32 && byte !== 9 && byte !== 10 && byte !== 13) {
+      nonTextBytes++;
+    }
+  }
+
+  return nonTextBytes / bytesRead > 0.3; // If >30% are non-text bytes, it's likely binary
+}
+
 function readFileContent(filePath: string): string {
   try {
     const fd = openSync(filePath, "r");
@@ -151,8 +177,9 @@ function readFileContent(filePath: string): string {
     const bytesRead = readSync(fd, buffer, 0, 1024, 0);
     closeSync(fd);
 
-    if (buffer.slice(0, bytesRead).includes(0)) {
-      return "_Binary file — cannot display_";
+    if (isBinaryFile(filePath, buffer, bytesRead)) {
+      const ext = filePath.split(".").pop()?.toUpperCase() || "BINARY";
+      return `_Binary file — cannot display (.${ext} file)_`;
     }
 
     const content = readFileSync(filePath, "utf-8");
