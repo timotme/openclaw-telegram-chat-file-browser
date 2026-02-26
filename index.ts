@@ -199,14 +199,14 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
           const prevOffset = Math.max(0, offset - MAX_TEXT_PREVIEW);
           navButtons.push({
             text: "⬅️ Previous",
-            callback_data: `/filebrowse-offset ${fullPath}:${prevOffset}`,
+            callback_data: `/filebrowse ${fullPath}:${prevOffset}`,
           });
         }
         if (hasMore) {
           const nextOffset = offset + MAX_TEXT_PREVIEW;
           navButtons.push({
             text: "Next ➡️",
-            callback_data: `/filebrowse-offset ${fullPath}:${nextOffset}`,
+            callback_data: `/filebrowse ${fullPath}:${nextOffset}`,
           });
         }
         if (navButtons.length > 0) {
@@ -321,10 +321,24 @@ async function sendOrEditBrowser(
 export default function register(api: OpenClawPluginApi) {
   const state = loadState();
 
-  async function handleFileBrowse(ctx: any, path: string, offset: number = 0): Promise<{ text: string }> {
+  async function handleFileBrowse(ctx: any, pathWithOptionalOffset: string): Promise<{ text: string }> {
     // Check if the message comes from Telegram
     if (ctx.channel !== "telegram") {
       return { text: "❌ Channel not supported. Only Telegram is supported for file browsing." };
+    }
+
+    // Parse path:offset format if present
+    let path = pathWithOptionalOffset;
+    let offset = 0;
+
+    const lastColonIndex = pathWithOptionalOffset.lastIndexOf(":");
+    if (lastColonIndex > 0) {
+      const offsetStr = pathWithOptionalOffset.substring(lastColonIndex + 1);
+      const parsedOffset = parseInt(offsetStr, 10);
+      if (!isNaN(parsedOffset) && parsedOffset >= 0) {
+        path = pathWithOptionalOffset.substring(0, lastColonIndex);
+        offset = parsedOffset;
+      }
     }
 
     // Get Telegram bot token from config
@@ -346,24 +360,6 @@ export default function register(api: OpenClawPluginApi) {
 
     // Return NO_REPLY indicator - we handled sending ourselves
     return { text: "\u200B" }; // Zero-width space - invisible but satisfies response check
-  }
-
-  async function handleFileOffset(ctx: any, pathWithOffset: string): Promise<{ text: string }> {
-    // Parse path:offset format
-    const lastColonIndex = pathWithOffset.lastIndexOf(":");
-    if (lastColonIndex === -1) {
-      return { text: "❌ Invalid file offset format" };
-    }
-
-    const path = pathWithOffset.substring(0, lastColonIndex);
-    const offsetStr = pathWithOffset.substring(lastColonIndex + 1);
-    const offset = parseInt(offsetStr, 10);
-
-    if (isNaN(offset)) {
-      return { text: "❌ Invalid offset value" };
-    }
-
-    return handleFileBrowse(ctx, path, offset);
   }
 
   async function handleDownload(ctx: any, filePath: string): Promise<{ text: string }> {
@@ -440,20 +436,6 @@ export default function register(api: OpenClawPluginApi) {
         return { text: "❌ No file path specified" };
       }
       return handleDownload(ctx, filePath);
-    },
-  });
-
-  api.registerCommand({
-    name: "filebrowse-offset",
-    description: "Browse file with offset (internal command)",
-    acceptsArgs: true,
-    requireAuth: true,
-    handler: async (ctx: any) => {
-      const pathWithOffset = ctx.args?.trim();
-      if (!pathWithOffset) {
-        return { text: "❌ No path or offset specified" };
-      }
-      return handleFileOffset(ctx, pathWithOffset);
     },
   });
 
