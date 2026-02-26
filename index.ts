@@ -282,12 +282,13 @@ async function sendOrEditBrowser(
   chatId: number,
   path: string,
   state: BrowserState,
-  offset: number = 0
+  offset: number = 0,
+  alwaysSendNew: boolean = false
 ): Promise<void> {
   const result = generateBrowser(path, offset);
   const messageId = state[String(chatId)];
 
-  if (messageId) {
+  if (messageId && !alwaysSendNew) {
     // Try to edit existing message
     try {
       await callTelegramApi(botToken, "editMessageText", {
@@ -321,7 +322,7 @@ async function sendOrEditBrowser(
 export default function register(api: OpenClawPluginApi) {
   const state = loadState();
 
-  async function handleFileBrowse(ctx: any, pathWithOptionalOffset: string): Promise<{ text: string }> {
+  async function handleFileBrowse(ctx: any, pathWithOptionalOffset: string, alwaysSendNew: boolean = false): Promise<{ text: string }> {
     // Check if the message comes from Telegram
     if (ctx.channel !== "telegram") {
       return { text: "❌ Channel not supported. Only Telegram is supported for file browsing." };
@@ -356,7 +357,7 @@ export default function register(api: OpenClawPluginApi) {
     }
 
     // Send or edit the browser message directly via Telegram API
-    await sendOrEditBrowser(botToken, chatId, path, state, offset);
+    await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew);
 
     // Return NO_REPLY indicator - we handled sending ourselves
     return { text: "\u200B" }; // Zero-width space - invisible but satisfies response check
@@ -405,23 +406,12 @@ export default function register(api: OpenClawPluginApi) {
   }
 
   api.registerCommand({
-    name: "filebrowse",
-    description: "Browse the OpenClaw workspace files",
-    acceptsArgs: true,
-    requireAuth: true,
-    handler: async (ctx: any) => {
-      const path = ctx.args?.trim() || ".";
-      return handleFileBrowse(ctx, path);
-    },
-  });
-
-  api.registerCommand({
     name: "browse",
     description: "Open file browser",
     acceptsArgs: false,
     requireAuth: true,
     handler: async (ctx: any) => {
-      return handleFileBrowse(ctx, ".");
+      return handleFileBrowse(ctx, ".", true);
     },
   });
 
