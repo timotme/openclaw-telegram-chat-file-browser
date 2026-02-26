@@ -252,6 +252,11 @@ export default function register(api: OpenClawPluginApi) {
   const state = loadState();
 
   async function handleFileBrowse(ctx: any, path: string): Promise<{ text: string }> {
+    // Check if the message comes from Telegram
+    if (ctx.channel !== "telegram") {
+      return { text: "❌ Channel not supported. Only Telegram is supported for file browsing." };
+    }
+
     // Get Telegram bot token from config
     const botToken = ctx.config.channels?.telegram?.botToken;
 
