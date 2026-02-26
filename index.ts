@@ -62,6 +62,39 @@ async function callTelegramApi(
   return data;
 }
 
+async function sendFileViaTelegram(
+  botToken: string,
+  chatId: number,
+  filePath: string
+): Promise<void> {
+  try {
+    const fileContent = readFileSync(filePath);
+    const fileName = filePath.split("/").pop() || "file";
+
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append("chat_id", String(chatId));
+    formData.append(
+      "document",
+      new Blob([fileContent], { type: "application/octet-stream" }),
+      fileName
+    );
+
+    const url = `https://api.telegram.org/bot${botToken}/sendDocument`;
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = (await response.json()) as Record<string, unknown>;
+    if (!data.ok) {
+      throw new Error((data.description as string) || "Failed to send file");
+    }
+  } catch (e: any) {
+    throw new Error(`Error sending file: ${e.message}`);
+  }
+}
+
 function getDisplayName(name: string, isDir: boolean): string {
   // Truncate long names to fit Telegram button limits
   const maxLen = 20;
@@ -147,6 +180,9 @@ function generateBrowser(path: string): { text: string; buttons: any[][] } {
         [
           { text: "⬆️ Up", callback_data: `/filebrowse ${parentDir}` },
           { text: "🏠 Home", callback_data: "/filebrowse ." },
+        ],
+        [
+          { text: "📥 Download", callback_data: `/download ${fullPath}` },
         ],
       ];
       return {
@@ -278,6 +314,48 @@ export default function register(api: OpenClawPluginApi) {
     return { text: "\u200B" }; // Zero-width space - invisible but satisfies response check
   }
 
+  async function handleDownload(ctx: any, filePath: string): Promise<{ text: string }> {
+    // Check if the message comes from Telegram
+    if (ctx.channel !== "telegram") {
+      return { text: "❌ Channel not supported. Only Telegram is supported for downloads." };
+    }
+
+    // Get Telegram bot token from config
+    const botToken = ctx.config.channels?.telegram?.botToken;
+
+    if (!botToken) {
+      return { text: "❌ Bot token not configured" };
+    }
+
+    // Get chat ID from senderId
+    const chatId = ctx.senderId ? parseInt(ctx.senderId, 10) : undefined;
+
+    if (!chatId || isNaN(chatId)) {
+      return { text: "❌ Cannot determine chat ID" };
+    }
+
+    try {
+      // Validate the path to ensure it's within workspace
+      const validatedPath = validatePath(filePath);
+
+      // Check if file exists and is not a directory
+      if (!existsSync(validatedPath)) {
+        return { text: `❌ File not found: ${filePath}` };
+      }
+
+      const stats = statSync(validatedPath);
+      if (stats.isDirectory()) {
+        return { text: "❌ Cannot download a directory" };
+      }
+
+      // Send the file via Telegram
+      await sendFileViaTelegram(botToken, chatId, validatedPath);
+      return { text: "\u200B" }; // Zero-width space - invisible
+    } catch (e: any) {
+      return { text: `❌ Error downloading file: ${e.message}` };
+    }
+  }
+
   api.registerCommand({
     name: "filebrowse",
     description: "Browse the OpenClaw workspace files",
@@ -296,6 +374,20 @@ export default function register(api: OpenClawPluginApi) {
     requireAuth: true,
     handler: async (ctx: any) => {
       return handleFileBrowse(ctx, ".");
+    },
+  });
+
+  api.registerCommand({
+    name: "download",
+    description: "Download a file from the workspace",
+    acceptsArgs: true,
+    requireAuth: true,
+    handler: async (ctx: any) => {
+      const filePath = ctx.args?.trim();
+      if (!filePath) {
+        return { text: "❌ No file path specified" };
+      }
+      return handleDownload(ctx, filePath);
     },
   });
 
