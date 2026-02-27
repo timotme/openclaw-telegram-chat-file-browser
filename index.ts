@@ -182,8 +182,8 @@ async function generateBrowser(path: string, offset: number = 0): Promise<{ text
 
       const buttons = [
         [
-          { text: "⬆️ Up", callback_data: `/filebrowse ${parentDir}` },
-          { text: "🏠 Home", callback_data: "/filebrowse ." },
+          { text: "⬆️ Up", callback_data: `/browse ${parentDir}` },
+          { text: "🏠 Home", callback_data: "/browse ." },
         ],
       ];
 
@@ -217,14 +217,14 @@ async function generateBrowser(path: string, offset: number = 0): Promise<{ text
           const prevOffset = Math.max(0, offset - MAX_TEXT_PREVIEW);
           navButtons.push({
             text: "⬅️ Previous",
-            callback_data: `/filebrowse ${fullPath}:${prevOffset}`,
+            callback_data: `/browse ${fullPath}:${prevOffset}`,
           });
         }
         if (hasMore) {
           const nextOffset = offset + MAX_TEXT_PREVIEW;
           navButtons.push({
             text: "Next ➡️",
-            callback_data: `/filebrowse ${fullPath}:${nextOffset}`,
+            callback_data: `/browse ${fullPath}:${nextOffset}`,
           });
         }
         if (navButtons.length > 0) {
@@ -253,10 +253,10 @@ async function generateBrowser(path: string, offset: number = 0): Promise<{ text
     const header = relPath === "." ? "📂 *workspace*" : `📂 *${escapeMarkdown(relPath)}/*`;
 
     const keyboard: any[][] = [];
-    const navRow: any[] = [{ text: "🏠 Home", callback_data: "/filebrowse ." }];
+    const navRow: any[] = [{ text: "🏠 Home", callback_data: "/browse ." }];
     if (relPath !== ".") {
       const parentDir = getRelativePath(dirname(fullPath));
-      navRow.unshift({ text: "⬆️ Up", callback_data: `/filebrowse ${parentDir}` });
+      navRow.unshift({ text: "⬆️ Up", callback_data: `/browse ${parentDir}` });
     }
     keyboard.push(navRow);
 
@@ -269,7 +269,7 @@ async function generateBrowser(path: string, offset: number = 0): Promise<{ text
       const entryRel = join(relPath === "." ? "" : relPath, entry.name);
       const button = {
         text: getDisplayName(entry.name, entry.isDirectory()),
-        callback_data: `/filebrowse ${entryRel}`,
+        callback_data: `/browse ${entryRel}`,
       };
 
       currentRow.push(button);
@@ -340,7 +340,7 @@ async function sendOrEditBrowser(
 export default function register(api: OpenClawPluginApi) {
   const state = loadState();
 
-  async function handleFileBrowse(ctx: any, pathWithOptionalOffset: string, alwaysSendNew: boolean = false): Promise<{ text: string }> {
+  async function handlebrowse(ctx: any, pathWithOptionalOffset: string, alwaysSendNew: boolean = false): Promise<{ text: string }> {
     // Check if the message comes from Telegram
     if (ctx.channel !== "telegram") {
       return { text: "❌ Channel not supported. Only Telegram is supported for file browsing." };
@@ -429,7 +429,7 @@ export default function register(api: OpenClawPluginApi) {
     acceptsArgs: false,
     requireAuth: true,
     handler: async (ctx: any) => {
-      return handleFileBrowse(ctx, ".", true);
+      return handlebrowse(ctx, ".", true);
     },
   });
 
