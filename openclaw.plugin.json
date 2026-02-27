@@ -1,5 +1,5 @@
 {
-  "id": "telegram-file-browser",
+  "id": "openclaw-telegram-file-browser",
   "name": "Telegram File Browser",
   "description": "File browser for OpenClaw workspace via Telegram inline buttons",
   "configSchema": {
