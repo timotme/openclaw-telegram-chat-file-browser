@@ -2,6 +2,10 @@
 
 An OpenClaw plugin that provides a file browser interface for your workspace via Telegram inline buttons.
 
+
+https://github.com/user-attachments/assets/e1009107-f9c8-4178-932e-57f304455c93
+
+
 ## Features
 
 - 📁 Browse workspace files and directories via Telegram
