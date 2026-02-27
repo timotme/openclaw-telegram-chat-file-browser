@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "fs";
 import { BrowserState } from "./constants.ts";
+import type { PluginConfig } from "./config.ts";
 import { loadState, saveState } from "./state.ts";
 import { callTelegramApi, sendFileViaTelegram } from "./telegram.ts";
 import { generateBrowser } from "./browser.ts";
@@ -11,9 +12,10 @@ async function sendOrEditBrowser(
   path: string,
   state: BrowserState,
   offset: number = 0,
-  alwaysSendNew: boolean = false
+  alwaysSendNew: boolean = false,
+  config: PluginConfig
 ): Promise<void> {
-  const result = generateBrowser(path, offset);
+  const result = generateBrowser(path, offset, config);
   const messageId = state[String(chatId)];
 
   if (messageId && !alwaysSendNew) {
@@ -50,7 +52,8 @@ async function sendOrEditBrowser(
 export async function handlebrowse(
   ctx: any,
   pathWithOptionalOffset: string,
-  alwaysSendNew: boolean = false
+  alwaysSendNew: boolean = false,
+  config: PluginConfig
 ): Promise<{ text: string }> {
   try {
     // Check if the message comes from Telegram
@@ -90,7 +93,7 @@ export async function handlebrowse(
     const state = loadState();
 
     // Send or edit the browser message directly via Telegram API
-    await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew);
+    await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew, config);
 
     // Return zero-width space - invisible indicator that we handled sending ourselves
     return { text: "\u200B" };
@@ -99,7 +102,11 @@ export async function handlebrowse(
   }
 }
 
-export async function handleDownload(ctx: any, filePath: string): Promise<{ text: string }> {
+export async function handleDownload(
+  ctx: any,
+  filePath: string,
+  config: PluginConfig
+): Promise<{ text: string }> {
   // Check if the message comes from Telegram
   if (ctx.channel !== "telegram") {
     return { text: "❌ Channel not supported. Only Telegram is supported for downloads." };

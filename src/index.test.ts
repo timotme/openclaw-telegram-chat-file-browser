@@ -7,9 +7,17 @@ import { getDisplayName, isBinaryFileSync, readFileContent } from "./file";
 import { loadState, saveState } from "./state";
 import { generateBrowser } from "./browser";
 import { WORKSPACE_ROOT, STATE_FILE, STATE_DIR } from "./constants";
+import type { PluginConfig } from "./config";
 
 // Mock fetch for Telegram API tests
 global.fetch = vi.fn();
+
+// Default test config matching the plugin defaults
+const DEFAULT_TEST_CONFIG: PluginConfig = {
+  maxButtonsPerRow: 2,
+  maxButtonsTotal: 40,
+  maxTextPreview: 2500,
+};
 
 describe("utils", () => {
   describe("escapeHtml", () => {
@@ -166,15 +174,15 @@ describe("file", () => {
     it("should read file content at offset 0", () => {
       const content = "Hello, World!";
       fs.writeFileSync(testFile, content);
-      const result = readFileContent(testFile, 0);
+      const result = readFileContent(testFile, 0, DEFAULT_TEST_CONFIG);
       expect(result.content).toBe(content);
       expect(result.hasMore).toBe(false);
     });
 
-    it("should indicate hasMore when file is larger than MAX_TEXT_PREVIEW", () => {
+    it("should indicate hasMore when file is larger than maxTextPreview", () => {
       const largeContent = "x".repeat(3000);
       fs.writeFileSync(testFile, largeContent);
-      const result = readFileContent(testFile, 0);
+      const result = readFileContent(testFile, 0, DEFAULT_TEST_CONFIG);
       expect(result.hasMore).toBe(true);
       expect(result.content.length).toBe(2500);
     });
@@ -183,17 +191,17 @@ describe("file", () => {
       const content = "0123456789".repeat(300); // 3000 chars
       fs.writeFileSync(testFile, content);
 
-      const chunk1 = readFileContent(testFile, 0);
+      const chunk1 = readFileContent(testFile, 0, DEFAULT_TEST_CONFIG);
       expect(chunk1.content.length).toBe(2500);
       expect(chunk1.hasMore).toBe(true);
 
-      const chunk2 = readFileContent(testFile, 2500);
+      const chunk2 = readFileContent(testFile, 2500, DEFAULT_TEST_CONFIG);
       expect(chunk2.content.length).toBe(500);
       expect(chunk2.hasMore).toBe(false);
     });
 
     it("should return error message for unreadable files", () => {
-      const result = readFileContent("/nonexistent/file.txt");
+      const result = readFileContent("/nonexistent/file.txt", 0, DEFAULT_TEST_CONFIG);
       expect(result.content).toContain("Error");
       expect(result.hasMore).toBe(false);
     });
@@ -275,7 +283,7 @@ describe("browser", () => {
   });
 
   it("should generate browser for workspace root", () => {
-    const result = generateBrowser(".");
+    const result = generateBrowser(".", 0, DEFAULT_TEST_CONFIG);
     expect(result.text).toContain("workspace");
     expect(result.buttons).toBeDefined();
     expect(Array.isArray(result.buttons)).toBe(true);
@@ -287,19 +295,19 @@ describe("browser", () => {
 
     // Mock validatePath and getRelativePath for this test
     const mockRelPath = "empty";
-    const result = generateBrowser(".");
+    const result = generateBrowser(".", 0, DEFAULT_TEST_CONFIG);
     expect(result.buttons).toBeDefined();
   });
 
   it("should include home button in response", () => {
-    const result = generateBrowser(".");
+    const result = generateBrowser(".", 0, DEFAULT_TEST_CONFIG);
     const buttons = result.buttons.flat();
     const homeButton = buttons.find((b: any) => b.text.includes("🏠"));
     expect(homeButton).toBeDefined();
   });
 
   it("should return error for invalid path", () => {
-    const result = generateBrowser("/etc/passwd");
+    const result = generateBrowser("/etc/passwd", 0, DEFAULT_TEST_CONFIG);
     expect(result.text).toContain("Error") || expect(result.text).toContain("Access denied");
   });
 
@@ -310,16 +318,48 @@ describe("browser", () => {
   });
 
   it("should not exceed max buttons total", () => {
-    const result = generateBrowser(".");
+    const result = generateBrowser(".", 0, DEFAULT_TEST_CONFIG);
     const totalButtons = result.buttons.flat().length;
     expect(totalButtons).toBeLessThanOrEqual(42); // 40 content + 2 nav buttons
   });
 
-  it("should have max 2 buttons per row (except nav row)", () => {
-    const result = generateBrowser(".");
+  it("should have max buttons per row according to config", () => {
+    const result = generateBrowser(".", 0, DEFAULT_TEST_CONFIG);
     // Skip first nav row
     for (let i = 1; i < result.buttons.length; i++) {
-      expect(result.buttons[i].length).toBeLessThanOrEqual(2);
+      expect(result.buttons[i].length).toBeLessThanOrEqual(DEFAULT_TEST_CONFIG.maxButtonsPerRow);
+    }
+  });
+});
+
+describe("config", () => {
+  it("should have valid default config", () => {
+    expect(DEFAULT_TEST_CONFIG.maxButtonsPerRow).toBe(2);
+    expect(DEFAULT_TEST_CONFIG.maxButtonsTotal).toBe(40);
+    expect(DEFAULT_TEST_CONFIG.maxTextPreview).toBe(2500);
+  });
+
+  it("should allow config with different button layout", () => {
+    const customConfig: PluginConfig = {
+      maxButtonsPerRow: 3,
+      maxButtonsTotal: 50,
+      maxTextPreview: 3000,
+    };
+    const result = generateBrowser(".", 0, customConfig);
+    // Should not throw and should generate browser
+    expect(result.buttons).toBeDefined();
+  });
+
+  it("should respect custom maxButtonsPerRow in browser generation", () => {
+    const customConfig: PluginConfig = {
+      maxButtonsPerRow: 1,
+      maxButtonsTotal: 40,
+      maxTextPreview: 2500,
+    };
+    const result = generateBrowser(".", 0, customConfig);
+    // Rows after nav should have max 1 button
+    for (let i = 1; i < result.buttons.length; i++) {
+      expect(result.buttons[i].length).toBeLessThanOrEqual(1);
     }
   });
 });
