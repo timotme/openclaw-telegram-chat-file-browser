@@ -2,12 +2,17 @@ import { join } from "path";
 import { homedir } from "os";
 
 export const WORKSPACE_ROOT = join(homedir(), ".openclaw", "workspace");
-export const STATE_DIR = join(homedir(), ".openclaw", "extensions", "telegram-file-browser");
-export const STATE_FILE = join(STATE_DIR, "state.json");
 
-export const MAX_BUTTONS_PER_ROW = 2;
-export const MAX_BUTTONS_TOTAL = 40;
-export const MAX_TEXT_PREVIEW = 2500;
+// Default state directory - can be overridden via getStateDir()
+export const DEFAULT_STATE_DIR = join(homedir(), ".openclaw", "extensions", "openclaw-telegram-file-browser");
+
+export function getStateDir(baseDir?: string): string {
+  return baseDir || DEFAULT_STATE_DIR;
+}
+
+export function getStateFile(baseDir?: string): string {
+  return join(getStateDir(baseDir), "state.json");
+}
 
 // State: chatId -> messageId
 export type BrowserState = Record<string, number>;

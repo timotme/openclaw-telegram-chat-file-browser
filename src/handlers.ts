@@ -1,10 +1,10 @@
 import { existsSync, statSync } from "fs";
-import { BrowserState } from "./constants.ts";
-import type { PluginConfig } from "./config.ts";
-import { loadState, saveState } from "./state.ts";
-import { callTelegramApi, sendFileViaTelegram } from "./telegram.ts";
-import { generateBrowser } from "./browser.ts";
-import { validatePath } from "./utils.ts";
+import { BrowserState } from "./constants.js";
+import type { PluginConfig } from "./config.js";
+import { loadState, saveState } from "./state.js";
+import { callTelegramApi, sendFileViaTelegram } from "./telegram.js";
+import { generateBrowser } from "./browser.js";
+import { validatePath } from "./utils.js";
 
 async function sendOrEditBrowser(
   botToken: string,
@@ -13,7 +13,8 @@ async function sendOrEditBrowser(
   state: BrowserState,
   offset: number = 0,
   alwaysSendNew: boolean = false,
-  config: PluginConfig
+  config: PluginConfig,
+  stateDir?: string
 ): Promise<void> {
   const result = generateBrowser(path, offset, config);
   const messageId = state[String(chatId)];
@@ -45,7 +46,7 @@ async function sendOrEditBrowser(
   // Store message ID for future edits
   if (response.result?.message_id) {
     state[String(chatId)] = response.result.message_id;
-    saveState(state);
+    saveState(state, stateDir);
   }
 }
 
@@ -53,7 +54,8 @@ export async function handlebrowse(
   ctx: any,
   pathWithOptionalOffset: string,
   alwaysSendNew: boolean = false,
-  config: PluginConfig
+  config: PluginConfig,
+  stateDir?: string
 ): Promise<{ text: string }> {
   try {
     // Check if the message comes from Telegram
@@ -90,10 +92,10 @@ export async function handlebrowse(
     }
 
     // Load state for this session
-    const state = loadState();
+    const state = loadState(stateDir);
 
     // Send or edit the browser message directly via Telegram API
-    await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew, config);
+    await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew, config, stateDir);
 
     // Return zero-width space - invisible indicator that we handled sending ourselves
     return { text: "\u200B" };
@@ -105,7 +107,8 @@ export async function handlebrowse(
 export async function handleDownload(
   ctx: any,
   filePath: string,
-  config: PluginConfig
+  config: PluginConfig,
+  stateDir?: string
 ): Promise<{ text: string }> {
   // Check if the message comes from Telegram
   if (ctx.channel !== "telegram") {

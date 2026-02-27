@@ -1,6 +1,6 @@
 import { existsSync, realpathSync } from "fs";
 import { join, resolve } from "path";
-import { WORKSPACE_ROOT } from "./constants.ts";
+import { WORKSPACE_ROOT } from "./constants.js";
 
 export function validatePath(requestedPath: string): string {
   let fullPath: string;
