@@ -4,13 +4,19 @@
   "private": true,
   "description": "File browser for OpenClaw workspace via Telegram inline buttons",
   "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
   "dependencies": {},
   "peerDependencies": {
-    "openclaw": ">=2026.2.26"
+    "openclaw": ">=2026.2.25"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.3.3"
+    "@vitest/coverage-v8": "^1.0.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.0"
   },
   "openclaw": {
     "extensions": [
