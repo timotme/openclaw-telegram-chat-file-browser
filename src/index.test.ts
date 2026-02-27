@@ -146,23 +146,39 @@ describe("file", () => {
       }
     });
 
-    it("should read file content", () => {
+    it("should read file content at offset 0", () => {
       const content = "Hello, World!";
       fs.writeFileSync(testFile, content);
-      expect(readFileContent(testFile)).toBe(content);
+      const result = readFileContent(testFile, 0);
+      expect(result.content).toBe(content);
+      expect(result.hasMore).toBe(false);
     });
 
-    it("should truncate large files", () => {
+    it("should indicate hasMore when file is larger than MAX_TEXT_PREVIEW", () => {
       const largeContent = "x".repeat(3000);
       fs.writeFileSync(testFile, largeContent);
-      const result = readFileContent(testFile);
-      expect(result).toContain("...");
-      expect(result.length).toBeLessThan(largeContent.length);
+      const result = readFileContent(testFile, 0);
+      expect(result.hasMore).toBe(true);
+      expect(result.content.length).toBe(2500);
+    });
+
+    it("should support pagination with offset", () => {
+      const content = "0123456789".repeat(300); // 3000 chars
+      fs.writeFileSync(testFile, content);
+
+      const chunk1 = readFileContent(testFile, 0);
+      expect(chunk1.content.length).toBe(2500);
+      expect(chunk1.hasMore).toBe(true);
+
+      const chunk2 = readFileContent(testFile, 2500);
+      expect(chunk2.content.length).toBe(500);
+      expect(chunk2.hasMore).toBe(false);
     });
 
     it("should return error message for unreadable files", () => {
       const result = readFileContent("/nonexistent/file.txt");
-      expect(result).toContain("Error");
+      expect(result.content).toContain("Error");
+      expect(result.hasMore).toBe(false);
     });
   });
 });

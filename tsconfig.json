@@ -19,6 +19,6 @@
     "target": "es2023",
     "useDefineForClassFields": false
   },
-  "include": ["index.ts"],
+  "include": ["index.ts", "index.test.ts"],
   "exclude": ["node_modules", "dist"]
 }

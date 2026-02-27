@@ -30,14 +30,23 @@ export function isBinaryFileSync(filePath: string): boolean {
   }
 }
 
-export function readFileContent(filePath: string): string {
+export function readFileContent(
+  filePath: string,
+  offset: number = 0
+): { content: string; hasMore: boolean } {
   try {
-    const content = readFileSync(filePath, "utf-8");
-    if (content.length > MAX_TEXT_PREVIEW) {
-      return content.slice(0, MAX_TEXT_PREVIEW) + "\n\n_... (truncated)_";
-    }
-    return content;
+    const fullContent = readFileSync(filePath, "utf-8");
+    const chunk = fullContent.slice(offset, offset + MAX_TEXT_PREVIEW);
+    const hasMore = offset + MAX_TEXT_PREVIEW < fullContent.length;
+
+    return {
+      content: chunk,
+      hasMore,
+    };
   } catch (e: any) {
-    return `_Error reading file: ${e.message}_`;
+    return {
+      content: `_Error reading file: ${e.message}_`,
+      hasMore: false,
+    };
   }
 }

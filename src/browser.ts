@@ -41,11 +41,7 @@ export function generateBrowser(path: string, offset: number = 0): { text: strin
       }
 
       // Text file - show content with pagination
-      const content = readFileContent(fullPath);
-
-      // Handle pagination for large files
-      const chunk = content.slice(offset, offset + MAX_TEXT_PREVIEW);
-      const hasMore = offset + MAX_TEXT_PREVIEW < content.length;
+      const { content: chunk, hasMore } = readFileContent(fullPath, offset);
       const truncationNote = hasMore ? "\n\n<i>... (truncated) - use Next to see more</i>" : "";
 
       // Add pagination buttons if needed
