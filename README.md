@@ -2,7 +2,7 @@
 
 A lightweight Telegram-based file explorer for your OpenClaw workspace. This plugin enables structured navigation, text preview with pagination, and file download directly within Telegram using inline buttons. Ideal for quick access on the go or when a full development environment isn’t available.
 
-https://github.com/user-attachments/assets/deb5051b-1e42-4bd9-b5b7-f66975765a6f
+https://github.com/user-attachments/assets/33cad6b9-72c1-4fb2-9571-c7d039c8db50
 
 
 ## Features
