@@ -1,20 +1,23 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { STATE_FILE, STATE_DIR, BrowserState } from "./constants.js";
+import { getStateDir, getStateFile, BrowserState } from "./constants.js";
 
-export function loadState(): BrowserState {
+export function loadState(stateDir?: string): BrowserState {
   try {
-    if (existsSync(STATE_FILE)) {
-      return JSON.parse(readFileSync(STATE_FILE, "utf-8"));
+    const stateFile = getStateFile(stateDir);
+    if (existsSync(stateFile)) {
+      return JSON.parse(readFileSync(stateFile, "utf-8"));
     }
   } catch {}
   return {};
 }
 
-export function saveState(state: BrowserState) {
+export function saveState(state: BrowserState, stateDir?: string) {
   try {
-    if (!existsSync(STATE_DIR)) {
-      mkdirSync(STATE_DIR, { recursive: true });
+    const dir = getStateDir(stateDir);
+    const stateFile = getStateFile(stateDir);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
     }
-    writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+    writeFileSync(stateFile, JSON.stringify(state, null, 2));
   } catch {}
 }
