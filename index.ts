@@ -138,10 +138,14 @@ function getRelativePath(fullPath: string): string {
   return resolvedPath.substring(resolvedWorkspace.length).replace(/^\//, "") || ".";
 }
 
-function escapeMarkdown(text: string): string {
-  // Escape Telegram MarkdownV2 special chars
+function escapeHtml(text: string): string {
+  // Escape HTML special characters for Telegram HTML mode
   return text
-    .replace(/[_*\[\]()~`>#+\-=|{}.!]/g, "\\$&");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function isBinaryFileSync(filePath: string): boolean {
@@ -208,7 +212,7 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
           { text: "📥 Download", callback_data: `/download ${fullPath}` },
         ]);
         return {
-          text: `📄 *${escapeMarkdown(relPath)}*\n\n_Binary file — cannot preview (.${ext} file)_\n\nUse the Download button to get the file.`,
+          text: `📄 <b>${escapeHtml(relPath)}</b>\n\n<i>Binary file — cannot preview (.${ext} file)</i>\n\nUse the Download button to get the file.`,
           buttons,
         };
       }
@@ -219,7 +223,7 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
       // Handle pagination for large files
       const chunk = content.slice(offset, offset + MAX_TEXT_PREVIEW);
       const hasMore = offset + MAX_TEXT_PREVIEW < content.length;
-      const truncationNote = hasMore ? "\n\n_... (truncated) - use Next to see more_" : "";
+      const truncationNote = hasMore ? "\n\n<i>... (truncated) - use Next to see more</i>" : "";
 
       // Add pagination buttons if needed
       if (offset > 0 || hasMore) {
@@ -248,7 +252,7 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
       ]);
 
       return {
-        text: `📄 *${escapeMarkdown(relPath)}*\n\n\`\`\`\n${chunk}${truncationNote}\n\`\`\``,
+        text: `📄 <b>${escapeHtml(relPath)}</b>\n\n<pre>${escapeHtml(chunk)}</pre>${truncationNote}`,
         buttons,
       };
     }
@@ -261,7 +265,7 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
     });
 
     const relPath = getRelativePath(fullPath);
-    const header = relPath === "." ? "📂 *workspace*" : `📂 *${escapeMarkdown(relPath)}/*`;
+    const header = relPath === "." ? "📂 <b>workspace</b>" : `📂 <b>${escapeHtml(relPath)}/</b>`;
 
     const keyboard: any[][] = [];
     const navRow: any[] = [{ text: "🏠 Home", callback_data: "/browse ." }];
@@ -296,13 +300,13 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
       keyboard.push(currentRow);
     }
 
-    const emptyNote = sorted.length === 0 ? "\n\n_Empty directory_" : "";
+    const emptyNote = sorted.length === 0 ? "\n\n<i>Empty directory</i>" : "";
     return {
       text: `${header}${emptyNote}`,
       buttons: keyboard,
     };
   } catch (e: any) {
-    return { text: `❌ Error: ${e.message}`, buttons: [] };
+    return { text: `❌ Error: ${escapeHtml(e.message)}`, buttons: [] };
   }
 }
 
@@ -324,7 +328,7 @@ async function sendOrEditBrowser(
         chat_id: chatId,
         message_id: messageId,
         text: result.text,
-        parse_mode: "Markdown",
+        parse_mode: "HTML",
         reply_markup: { inline_keyboard: result.buttons },
       });
       return;
