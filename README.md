@@ -1,14 +1,13 @@
-# Telegram File Browser
+# Telegram File Browser for OpenClaw
 
-An OpenClaw plugin that provides a file browser interface for your workspace via Telegram inline buttons.
+A lightweight Telegram-based file explorer for your OpenClaw workspace. This plugin enables structured navigation, text preview with pagination, and file download directly within Telegram using inline buttons. Ideal for quick access on the go or when a full development environment isn’t available.
 
-
-https://github.com/user-attachments/assets/e1009107-f9c8-4178-932e-57f304455c93
+https://github.com/user-attachments/assets/deb5051b-1e42-4bd9-b5b7-f66975765a6f
 
 
 ## Features
 
-- 📁 Browse workspace files and directories via Telegram
+- 📁 Browse workspace files and directories via Telegram using inline buttons
 - 📄 Preview text files with pagination support
 - 🎛️ Configurable UI layout and behavior limits
 - 🔐 Binary file detection and handling
@@ -17,7 +16,7 @@ https://github.com/user-attachments/assets/e1009107-f9c8-4178-932e-57f304455c93
 ## Installation
 
 ```bash
-npm install openclaw-telegram-file-browser
+openclaw plugins install openclaw-telegram-file-browser
 ```
 
 ## Configuration
