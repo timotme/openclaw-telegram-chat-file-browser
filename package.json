@@ -8,7 +8,9 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage"
   },
-  "dependencies": {},
+  "dependencies": {
+    "isbinaryfile": "^5.0.7"
+  },
   "peerDependencies": {
     "openclaw": ">=2026.2.25"
   },
