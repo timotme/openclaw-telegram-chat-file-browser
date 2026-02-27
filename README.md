@@ -13,7 +13,7 @@ An OpenClaw plugin that provides a file browser interface for your workspace via
 ## Installation
 
 ```bash
-npm install @openclaw/telegram-file-browser
+npm install openclaw-telegram-file-browser
 ```
 
 ## Configuration
@@ -24,7 +24,7 @@ Configure the plugin in your OpenClaw `config.json`:
 {
   "plugins": {
     "entries": {
-      "telegram-file-browser": {
+      "openclaw-telegram-file-browser": {
         "config": {
           "maxButtonsPerRow": 2,
           "maxButtonsTotal": 40,

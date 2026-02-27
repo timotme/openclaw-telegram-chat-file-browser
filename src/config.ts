@@ -25,7 +25,7 @@ const DEFAULTS: PluginConfig = {
  * Uses defaults for any missing values.
  */
 export function loadConfig(api: OpenClawPluginApi): PluginConfig {
-  const config = (api.config?.plugins?.entries?.["telegram-file-browser"]?.config || {}) as Record<
+  const config = (api.config?.plugins?.entries?.["openclaw-telegram-file-browser"]?.config || {}) as Record<
     string,
     any
   >;
