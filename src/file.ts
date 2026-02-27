@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { isBinaryFileSync as checkIsBinaryFile } from "isbinaryfile";
-import type { PluginConfig } from "./config.ts";
+import type { PluginConfig } from "./config.js";
 
 export function getDisplayName(name: string, isDir: boolean): string {
   // Truncate long names to fit Telegram button limits

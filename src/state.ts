@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { STATE_FILE, STATE_DIR, BrowserState } from "./constants.ts";
+import { STATE_FILE, STATE_DIR, BrowserState } from "./constants.js";
 
 export function loadState(): BrowserState {
   try {

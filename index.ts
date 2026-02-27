@@ -1,6 +1,6 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { handlebrowse, handleDownload } from "./src/handlers.ts";
-import { loadConfig } from "./src/config.ts";
+import { handlebrowse, handleDownload } from "./src/handlers.js";
+import { loadConfig } from "./src/config.js";
 
 export default function register(api: OpenClawPluginApi) {
   // Load configuration

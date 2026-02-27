@@ -1,8 +1,8 @@
 import { existsSync, statSync, readdirSync } from "fs";
 import { dirname } from "path";
-import type { PluginConfig } from "./config.ts";
-import { validatePath, getRelativePath, escapeHtml } from "./utils.ts";
-import { getDisplayName, isBinaryFileSync, readFileContent } from "./file.ts";
+import type { PluginConfig } from "./config.js";
+import { validatePath, getRelativePath, escapeHtml } from "./utils.js";
+import { getDisplayName, isBinaryFileSync, readFileContent } from "./file.js";
 
 export function generateBrowser(
   path: string,

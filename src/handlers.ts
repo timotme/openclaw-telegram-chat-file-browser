@@ -1,10 +1,10 @@
 import { existsSync, statSync } from "fs";
-import { BrowserState } from "./constants.ts";
-import type { PluginConfig } from "./config.ts";
-import { loadState, saveState } from "./state.ts";
-import { callTelegramApi, sendFileViaTelegram } from "./telegram.ts";
-import { generateBrowser } from "./browser.ts";
-import { validatePath } from "./utils.ts";
+import { BrowserState } from "./constants.js";
+import type { PluginConfig } from "./config.js";
+import { loadState, saveState } from "./state.js";
+import { callTelegramApi, sendFileViaTelegram } from "./telegram.js";
+import { generateBrowser } from "./browser.js";
+import { validatePath } from "./utils.js";
 
 async function sendOrEditBrowser(
   botToken: string,
