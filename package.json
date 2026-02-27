@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/telegram-file-browser",
+  "name": "openclaw-telegram-file-browser",
   "version": "1.0.0",
   "description": "File browser for OpenClaw workspace via Telegram inline buttons",
   "type": "module",
@@ -35,9 +35,6 @@
   ],
   "author": "timotme",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
     "isbinaryfile": "^5.0.7"
   },
