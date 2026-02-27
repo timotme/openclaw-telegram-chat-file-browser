@@ -426,10 +426,11 @@ export default function register(api: OpenClawPluginApi) {
   api.registerCommand({
     name: "browse",
     description: "Open file browser",
-    acceptsArgs: false,
+    acceptsArgs: true,
     requireAuth: true,
     handler: async (ctx: any) => {
-      return handlebrowse(ctx, ".", true);
+      const path = ctx.args?.trim() || ".";
+      return handlebrowse(ctx, path, true);
     },
   });
 
