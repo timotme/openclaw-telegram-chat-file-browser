@@ -1,10 +1,13 @@
-# Telegram File Browser
+# Telegram File Browser for OpenClaw
 
-An OpenClaw plugin that provides a file browser interface for your workspace via Telegram inline buttons.
+A lightweight Telegram-based file explorer for your OpenClaw workspace. This plugin enables structured navigation, text preview with pagination, and file download directly within Telegram using inline buttons. Ideal for quick access on the go or when a full development environment isn’t available.
+
+https://github.com/user-attachments/assets/33cad6b9-72c1-4fb2-9571-c7d039c8db50
+
 
 ## Features
 
-- 📁 Browse workspace files and directories via Telegram
+- 📁 Browse workspace files and directories via Telegram using inline buttons
 - 📄 Preview text files with pagination support
 - 🎛️ Configurable UI layout and behavior limits
 - 🔐 Binary file detection and handling
@@ -13,7 +16,7 @@ An OpenClaw plugin that provides a file browser interface for your workspace via
 ## Installation
 
 ```bash
-npm install openclaw-telegram-file-browser
+openclaw plugins install openclaw-telegram-file-browser
 ```
 
 ## Configuration
@@ -49,22 +52,33 @@ Configure the plugin in your OpenClaw `config.json`:
 /browse [path]
 ```
 
-Navigate through your workspace. Click inline buttons to explore directories.
+Navigate through your workspace using inline buttons. Sending the command without any arguments will open the file browser at the workspace root.
 
-Examples:
-- `/browse .` - Start at workspace root
-- `/browse folder/subfolder` - Navigate to specific path
+**How it works:**
+- Send `/browse` (without args) - Opens browser at workspace root with navigation buttons
+- Click inline buttons to navigate directories and view files
+- The interface updates inline (edits existing messages) when navigating via buttons
+- Send `/browse [path]` to jump directly to a specific location
+
+**Examples:**
+- `/browse` - Open file browser at workspace root
+- `/browse .` - Start at workspace root (explicit)
+- `/browse folder/subfolder` - Navigate directly to a specific path
+- Click "📁 folder_name" buttons to enter directories
+- Click "📄 file_name" buttons to view file contents
+- Use "⬆️ Up" and "🏠 Home" buttons for navigation
 
 ### Download command
 ```
 /download <path>
 ```
 
-Download a file from your workspace via Telegram.
+Download a file from your workspace directly via Telegram. The file is sent as an attachment.
 
-Examples:
-- `/download document.pdf`
-- `/download project/README.md`
+**Examples:**
+- `/download document.pdf` - Download a PDF file
+- `/download project/README.md` - Download from a subdirectory
+- `/download config.json` - Download any file type
 
 ## Requirements
 
