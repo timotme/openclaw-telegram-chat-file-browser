@@ -35,6 +35,9 @@
   ],
   "author": "timotme",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "isbinaryfile": "^5.0.7"
   },
