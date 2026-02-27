@@ -388,8 +388,8 @@ export default function register(api: OpenClawPluginApi) {
     // Send or edit the browser message directly via Telegram API
     await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew);
 
-    // Return NO_REPLY indicator - we handled sending ourselves
-    return { text: "\u200B" }; // Zero-width space - invisible but satisfies response check
+    // Return a space - prevents OpenClaw from sending duplicate, avoids "empty text" error
+    return { text: " " };
   }
 
   async function handleDownload(ctx: any, filePath: string): Promise<{ text: string }> {
@@ -428,7 +428,7 @@ export default function register(api: OpenClawPluginApi) {
 
       // Send the file via Telegram
       await sendFileViaTelegram(botToken, chatId, validatedPath);
-      return { text: "\u200B" }; // Zero-width space - invisible
+      return { text: " " }; // Return space - we handled sending the file ourselves
     } catch (e: any) {
       return { text: `❌ Error downloading file: ${e.message}` };
     }
@@ -441,10 +441,9 @@ export default function register(api: OpenClawPluginApi) {
     requireAuth: true,
     handler: async (ctx: any) => {
       const pathWithOffset = ctx.args?.trim() || ".";
-      // Only send new message if there's no offset (initial browse)
-      // Pagination (with offset) should edit the existing message
-      const hasOffset = pathWithOffset.includes(":");
-      const alwaysSendNew = !hasOffset;
+      // Only send new message if user typed /browse without clicking a button
+      // Button clicks (which provide args) should edit the existing message
+      const alwaysSendNew = !ctx.args;
       return handlebrowse(ctx, pathWithOffset, alwaysSendNew);
     },
   });
