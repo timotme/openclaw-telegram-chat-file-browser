@@ -1,10 +1,14 @@
 import { existsSync, statSync, readdirSync } from "fs";
 import { dirname } from "path";
-import { MAX_BUTTONS_PER_ROW, MAX_BUTTONS_TOTAL, MAX_TEXT_PREVIEW } from "./constants.ts";
+import type { PluginConfig } from "./config.ts";
 import { validatePath, getRelativePath, escapeHtml } from "./utils.ts";
 import { getDisplayName, isBinaryFileSync, readFileContent } from "./file.ts";
 
-export function generateBrowser(path: string, offset: number = 0): { text: string; buttons: any[][] } {
+export function generateBrowser(
+  path: string,
+  offset: number = 0,
+  config: PluginConfig
+): { text: string; buttons: any[][] } {
   try {
     const fullPath = validatePath(path);
 
@@ -41,21 +45,21 @@ export function generateBrowser(path: string, offset: number = 0): { text: strin
       }
 
       // Text file - show content with pagination
-      const { content: chunk, hasMore } = readFileContent(fullPath, offset);
+      const { content: chunk, hasMore } = readFileContent(fullPath, offset, config);
       const truncationNote = hasMore ? "\n\n<i>... (truncated) - use Next to see more</i>" : "";
 
       // Add pagination buttons if needed
       if (offset > 0 || hasMore) {
         const navButtons: any[] = [];
         if (offset > 0) {
-          const prevOffset = Math.max(0, offset - MAX_TEXT_PREVIEW);
+          const prevOffset = Math.max(0, offset - config.maxTextPreview);
           navButtons.push({
             text: "⬅️ Previous",
             callback_data: `/browse ${relPath}:${prevOffset}`,
           });
         }
         if (hasMore) {
-          const nextOffset = offset + MAX_TEXT_PREVIEW;
+          const nextOffset = offset + config.maxTextPreview;
           navButtons.push({
             text: "Next ➡️",
             callback_data: `/browse ${relPath}:${nextOffset}`,
@@ -98,7 +102,7 @@ export function generateBrowser(path: string, offset: number = 0): { text: strin
     let currentRow: any[] = [];
 
     for (const entry of sorted) {
-      if (buttonCount >= MAX_BUTTONS_TOTAL) break;
+      if (buttonCount >= config.maxButtonsTotal) break;
 
       const entryRel = relPath === "." ? entry.name : `${relPath}/${entry.name}`;
       const button = {
@@ -109,7 +113,7 @@ export function generateBrowser(path: string, offset: number = 0): { text: strin
       currentRow.push(button);
       buttonCount++;
 
-      if (currentRow.length >= MAX_BUTTONS_PER_ROW) {
+      if (currentRow.length >= config.maxButtonsPerRow) {
         keyboard.push(currentRow);
         currentRow = [];
       }
