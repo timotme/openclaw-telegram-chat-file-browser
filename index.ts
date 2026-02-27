@@ -209,7 +209,7 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
         // Binary file - show message and download button
         const ext = fullPath.split(".").pop()?.toUpperCase() || "BINARY";
         buttons.push([
-          { text: "📥 Download", callback_data: `/download ${fullPath}` },
+          { text: "📥 Download", callback_data: `/download ${relPath}` },
         ]);
         return {
           text: `📄 <b>${escapeHtml(relPath)}</b>\n\n<i>Binary file — cannot preview (.${ext} file)</i>\n\nUse the Download button to get the file.`,
@@ -232,14 +232,14 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
           const prevOffset = Math.max(0, offset - MAX_TEXT_PREVIEW);
           navButtons.push({
             text: "⬅️ Previous",
-            callback_data: `/browse ${fullPath}:${prevOffset}`,
+            callback_data: `/browse ${relPath}:${prevOffset}`,
           });
         }
         if (hasMore) {
           const nextOffset = offset + MAX_TEXT_PREVIEW;
           navButtons.push({
             text: "Next ➡️",
-            callback_data: `/browse ${fullPath}:${nextOffset}`,
+            callback_data: `/browse ${relPath}:${nextOffset}`,
           });
         }
         if (navButtons.length > 0) {
@@ -248,7 +248,7 @@ function generateBrowser(path: string, offset: number = 0): { text: string; butt
       }
 
       buttons.push([
-        { text: "📥 Download", callback_data: `/download ${fullPath}` },
+        { text: "📥 Download", callback_data: `/download ${relPath}` },
       ]);
 
       return {
