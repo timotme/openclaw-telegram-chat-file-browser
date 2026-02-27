@@ -110,26 +110,43 @@ describe("file", () => {
   });
 
   describe("isBinaryFileSync", () => {
-    it("should detect binary extensions", () => {
-      expect(isBinaryFileSync("image.png")).toBe(true);
-      expect(isBinaryFileSync("archive.zip")).toBe(true);
-      expect(isBinaryFileSync("document.pdf")).toBe(true);
+    let testDir: string;
+
+    beforeEach(() => {
+      testDir = path.join(os.tmpdir(), "test-binary-files");
+      if (fs.existsSync(testDir)) {
+        fs.rmSync(testDir, { recursive: true });
+      }
+      fs.mkdirSync(testDir, { recursive: true });
     });
 
-    it("should not detect text files", () => {
-      expect(isBinaryFileSync("file.txt")).toBe(false);
-      expect(isBinaryFileSync("script.js")).toBe(false);
-      expect(isBinaryFileSync("data.json")).toBe(false);
+    afterEach(() => {
+      if (fs.existsSync(testDir)) {
+        fs.rmSync(testDir, { recursive: true });
+      }
+    });
+
+    it("should detect binary files", () => {
+      const binaryFile = path.join(testDir, "image.png");
+      fs.writeFileSync(binaryFile, Buffer.from([0x89, 0x50, 0x4e, 0x47])); // PNG header
+      expect(isBinaryFileSync(binaryFile)).toBe(true);
+    });
+
+    it("should detect text files", () => {
+      const textFile = path.join(testDir, "file.txt");
+      fs.writeFileSync(textFile, "Hello, World!");
+      expect(isBinaryFileSync(textFile)).toBe(false);
     });
 
     it("should handle case-insensitive extensions", () => {
-      expect(isBinaryFileSync("image.PNG")).toBe(true);
-      expect(isBinaryFileSync("archive.ZIP")).toBe(true);
+      const binaryFile = path.join(testDir, "archive.ZIP");
+      fs.writeFileSync(binaryFile, Buffer.from([0x50, 0x4b, 0x03, 0x04])); // ZIP header
+      expect(isBinaryFileSync(binaryFile)).toBe(true);
     });
 
-    it("should detect binary extension even if file doesn't exist", () => {
+    it("should return false for non-existent files", () => {
       const result = isBinaryFileSync("/nonexistent/path/file.bin");
-      expect(result).toBe(true);
+      expect(result).toBe(false);
     });
   });
 

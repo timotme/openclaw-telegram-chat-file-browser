@@ -1,4 +1,5 @@
-import { readFileSync, openSync, readSync, closeSync } from "fs";
+import { readFileSync } from "fs";
+import { isBinaryFileSync as checkIsBinaryFile } from "isbinaryfile";
 import { MAX_TEXT_PREVIEW } from "./constants.ts";
 import { escapeHtml } from "./utils.ts";
 
@@ -10,22 +11,10 @@ export function getDisplayName(name: string, isDir: boolean): string {
 }
 
 export function isBinaryFileSync(filePath: string): boolean {
-  // Check file extension against common binary formats
-  const binaryExtensions = /\.(webp|png|jpg|jpeg|gif|bmp|ico|exe|dll|so|dylib|zip|tar|gz|rar|7z|pdf|bin|dat|db|sqlite|jar|class)$/i;
-  if (binaryExtensions.test(filePath)) {
-    return true;
-  }
-
-  // Check first 512 bytes for null bytes
   try {
-    const fd = openSync(filePath, "r");
-    const buffer = Buffer.alloc(512);
-    const bytesRead = readSync(fd, buffer, 0, 512, 0);
-    closeSync(fd);
-
-    return buffer.slice(0, bytesRead).includes(0);
+    return checkIsBinaryFile(filePath);
   } catch {
-    // If we can't read, assume it's text
+    // If we can't determine, assume it's text
     return false;
   }
 }
