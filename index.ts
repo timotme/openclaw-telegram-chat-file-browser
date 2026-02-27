@@ -388,8 +388,8 @@ export default function register(api: OpenClawPluginApi) {
     // Send or edit the browser message directly via Telegram API
     await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew);
 
-    // Return a space - prevents OpenClaw from sending duplicate, avoids "empty text" error
-    return { text: " " };
+    // Return zero-width space - invisible indicator that we handled sending ourselves
+    return { text: "\u200B" };
   }
 
   async function handleDownload(ctx: any, filePath: string): Promise<{ text: string }> {
@@ -428,7 +428,7 @@ export default function register(api: OpenClawPluginApi) {
 
       // Send the file via Telegram
       await sendFileViaTelegram(botToken, chatId, validatedPath);
-      return { text: " " }; // Return space - we handled sending the file ourselves
+      return { text: "\u200B" }; // Zero-width space - invisible indicator we handled sending
     } catch (e: any) {
       return { text: `❌ Error downloading file: ${e.message}` };
     }
