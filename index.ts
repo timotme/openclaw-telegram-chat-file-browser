@@ -1,5 +1,4 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
-import { isBinaryFile } from "isbinaryfile";
 import {
   existsSync,
   readFileSync,
@@ -145,11 +144,23 @@ function escapeMarkdown(text: string): string {
     .replace(/[_*\[\]()~`>#+\-=|{}.!]/g, "\\$&");
 }
 
-async function checkIfBinary(filePath: string): Promise<boolean> {
+function isBinaryFileSync(filePath: string): boolean {
+  // Check file extension against common binary formats
+  const binaryExtensions = /\.(webp|png|jpg|jpeg|gif|bmp|ico|exe|dll|so|dylib|zip|tar|gz|rar|7z|pdf|bin|dat|db|sqlite|jar|class)$/i;
+  if (binaryExtensions.test(filePath)) {
+    return true;
+  }
+
+  // Check first 512 bytes for null bytes
   try {
-    return await isBinaryFile(filePath);
-  } catch (e: any) {
-    // If we can't determine, assume it's text to be safe
+    const fd = openSync(filePath, "r");
+    const buffer = Buffer.alloc(512);
+    const bytesRead = readSync(fd, buffer, 0, 512, 0);
+    closeSync(fd);
+
+    return buffer.slice(0, bytesRead).includes(0);
+  } catch {
+    // If we can't read, assume it's text
     return false;
   }
 }
@@ -166,7 +177,7 @@ function readFileContent(filePath: string): string {
   }
 }
 
-async function generateBrowser(path: string, offset: number = 0): Promise<{ text: string; buttons: any[][] }> {
+function generateBrowser(path: string, offset: number = 0): { text: string; buttons: any[][] } {
   try {
     const fullPath = validatePath(path);
 
@@ -188,7 +199,7 @@ async function generateBrowser(path: string, offset: number = 0): Promise<{ text
       ];
 
       // Check if file is binary
-      const isBinary = await checkIfBinary(fullPath);
+      const isBinary = isBinaryFileSync(fullPath);
 
       if (isBinary) {
         // Binary file - show message and download button
@@ -303,7 +314,7 @@ async function sendOrEditBrowser(
   offset: number = 0,
   alwaysSendNew: boolean = false
 ): Promise<void> {
-  const result = await generateBrowser(path, offset);
+  const result = generateBrowser(path, offset);
   const messageId = state[String(chatId)];
 
   if (messageId && !alwaysSendNew) {
@@ -429,8 +440,12 @@ export default function register(api: OpenClawPluginApi) {
     acceptsArgs: true,
     requireAuth: true,
     handler: async (ctx: any) => {
-      const path = ctx.args?.trim() || ".";
-      return handlebrowse(ctx, path, true);
+      const pathWithOffset = ctx.args?.trim() || ".";
+      // Only send new message if there's no offset (initial browse)
+      // Pagination (with offset) should edit the existing message
+      const hasOffset = pathWithOffset.includes(":");
+      const alwaysSendNew = !hasOffset;
+      return handlebrowse(ctx, pathWithOffset, alwaysSendNew);
     },
   });
 
