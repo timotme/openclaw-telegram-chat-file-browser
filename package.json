@@ -49,7 +49,7 @@
   },
   "openclaw": {
     "extensions": [
-      "."
+      "./index.ts"
     ]
   }
 }
