@@ -56,7 +56,7 @@ export async function handlebrowse(
   alwaysSendNew: boolean = false,
   config: PluginConfig,
   stateDir?: string
-): Promise<{ text: string }> {
+): Promise<{ text?: string }> {
   try {
     // Check if the message comes from Telegram
     if (ctx.channel !== "telegram") {
@@ -98,7 +98,7 @@ export async function handlebrowse(
     await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew, config, stateDir);
 
     // Return zero-width space - invisible indicator that we handled sending ourselves
-    return { text: "\u200B" };
+    return { };
   } catch (e: any) {
     return { text: `❌ Error: ${e.message}` };
   }
