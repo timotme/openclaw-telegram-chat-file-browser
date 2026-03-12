@@ -39,7 +39,7 @@ async function sendOrEditBrowser(
   const response = await callTelegramApi(botToken, "sendMessage", {
     chat_id: chatId,
     text: result.text,
-    parse_mode: "Markdown",
+    parse_mode: "HTML",
     reply_markup: { inline_keyboard: result.buttons },
   });
 
