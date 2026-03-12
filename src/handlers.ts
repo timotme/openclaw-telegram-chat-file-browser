@@ -97,8 +97,7 @@ export async function handlebrowse(
     // Send or edit the browser message directly via Telegram API
     await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew, config, stateDir);
 
-    // Return zero-width space - invisible indicator that we handled sending ourselves
-    return { };
+    return { text: "NO_REPLY" };
   } catch (e: any) {
     return { text: `❌ Error: ${e.message}` };
   }
@@ -145,7 +144,7 @@ export async function handleDownload(
 
     // Send the file via Telegram
     await sendFileViaTelegram(botToken, chatId, validatedPath);
-    return { text: "\u200B" }; // Zero-width space - invisible indicator we handled sending
+    return { text: "NO_REPLY" };
   } catch (e: any) {
     return { text: `❌ Error downloading file: ${e.message}` };
   }
