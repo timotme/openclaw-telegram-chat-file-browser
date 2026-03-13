@@ -39,7 +39,7 @@ async function sendOrEditBrowser(
   const response = await callTelegramApi(botToken, "sendMessage", {
     chat_id: chatId,
     text: result.text,
-    parse_mode: "Markdown",
+    parse_mode: "HTML",
     reply_markup: { inline_keyboard: result.buttons },
   });
 
@@ -56,7 +56,7 @@ export async function handlebrowse(
   alwaysSendNew: boolean = false,
   config: PluginConfig,
   stateDir?: string
-): Promise<{ text: string }> {
+): Promise<{ text?: string }> {
   try {
     // Check if the message comes from Telegram
     if (ctx.channel !== "telegram") {
@@ -97,8 +97,9 @@ export async function handlebrowse(
     // Send or edit the browser message directly via Telegram API
     await sendOrEditBrowser(botToken, chatId, path, state, offset, alwaysSendNew, config, stateDir);
 
-    // Return zero-width space - invisible indicator that we handled sending ourselves
-    return { text: "\u200B" };
+    return alwaysSendNew
+      ? { text: "Use the buttons above to browse files." }
+      : { text: "NO_REPLY" };
   } catch (e: any) {
     return { text: `❌ Error: ${e.message}` };
   }
@@ -145,7 +146,7 @@ export async function handleDownload(
 
     // Send the file via Telegram
     await sendFileViaTelegram(botToken, chatId, validatedPath);
-    return { text: "\u200B" }; // Zero-width space - invisible indicator we handled sending
+    return { text: "NO_REPLY" };
   } catch (e: any) {
     return { text: `❌ Error downloading file: ${e.message}` };
   }
