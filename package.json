@@ -1,6 +1,6 @@
 {
   "name": "openclaw-telegram-file-browser",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "File browser for OpenClaw workspace via Telegram inline buttons",
   "type": "module",
   "main": "./index.ts",
